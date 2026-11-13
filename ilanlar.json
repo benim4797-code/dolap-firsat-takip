@@ -1,0 +1,53 @@
+{
+ "ilanlar": {},
+ "tohumlanan": [],
+ "ayarlar": {
+  "esik": 70.0,
+  "piyasa_esik": 40.0,
+  "markalar": [
+   "beymen bebek",
+   "stokke",
+   "bugaboo",
+   "cybex",
+   "joolz",
+   "uppababy",
+   "nuna",
+   "babyzen yoyo",
+   "doona",
+   "silver cross",
+   "snoo",
+   "babybjörn",
+   "ergobaby",
+   "elodie details",
+   "liewood",
+   "done by deer",
+   "nattou",
+   "bonpoint",
+   "jacadi",
+   "ralph lauren bebek",
+   "konges sløjd",
+   "burberry kids",
+   "moncler çocuk",
+   "bobo choses",
+   "mini rodini",
+   "jellycat",
+   "maileg",
+   "lego duplo",
+   "grimm's",
+   "plan toys"
+  ]
+ },
+ "tg_offset": 0,
+ "tur": 1,
+ "gunluk": {
+  "tarih": "2026-11-14",
+  "tarama": 1,
+  "yeni": 0,
+  "bildirim": 0
+ },
+ "son_ozet": "",
+ "hata": {
+  "sayac": 1,
+  "son_uyari": 0
+ }
+}
