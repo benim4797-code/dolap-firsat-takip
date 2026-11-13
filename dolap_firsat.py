@@ -273,14 +273,31 @@ KART_JS = """(linkParca) => {
 }"""
 
 
+TANI = {}   # site -> ilk aramanın teşhis bilgisi (test raporu için)
+
+
 def site_ilanlari(page, site, terim):
     ayar = SITELER[site]
-    page.goto(ayar["arama"].format(q=urllib.parse.quote(terim)),
-              wait_until="domcontentloaded", timeout=60000)
+    url = ayar["arama"].format(q=urllib.parse.quote(terim))
+    yanit = page.goto(url, wait_until="domcontentloaded", timeout=60000)
     page.wait_for_timeout(2500)
     page.mouse.wheel(0, 4000)
     page.wait_for_timeout(1200)
-    return page.evaluate(KART_JS, ayar["link_js"])
+    sonuc = page.evaluate(KART_JS, ayar["link_js"])
+    if site not in TANI:
+        try:
+            govde = page.inner_text("body")
+            linkler = page.evaluate("""() => [...new Set([...document.querySelectorAll('a[href]')]
+                .map(a => { try { return new URL(a.href).pathname } catch(e) { return '' } })
+                .filter(p => p.length > 1))].slice(0, 8)""")
+            TANI[site] = {"url": url, "durum": yanit.status if yanit else "?",
+                          "son_url": page.url, "baslik": page.title()[:80],
+                          "metin": len(govde), "fiyat_var": bool(FIYAT_RE.search(govde)),
+                          "ilan": len(sonuc), "linkler": linkler,
+                          "ozet": " ".join(govde.split())[:200]}
+        except Exception as e:
+            TANI[site] = {"url": url, "hata": str(e)[:150]}
+    return sonuc
 
 
 def ilan_detay(page, link, kart_metni, kart_foto):
@@ -439,6 +456,16 @@ def test_raporu(page, ilanlar):
             f"{f' (%{s:.0f})' if s is not None else ''} | piyasa {tl(k['piyasa']) if k['piyasa'] else '?'}"
             f"{f' (%{p:.0f})' if p is not None else ''} | foto {'var' if d['foto'] else 'yok'}\n"
             f"  {ilan['link']}")
+    for site, t in TANI.items():
+        if "hata" in t:
+            satirlar.append(f"\n🔎 <b>{site}</b>: hata {kacis(t['hata'])}")
+            continue
+        satirlar.append(
+            f"\n🔎 <b>{site}</b> teşhis\nHTTP {t['durum']} · başlık: {kacis(t['baslik'])}\n"
+            f"Son adres: {kacis(t['son_url'][:120])}\n"
+            f"Metin: {t['metin']} karakter · fiyat yazısı {'var' if t['fiyat_var'] else 'yok'} · ilan {t['ilan']}\n"
+            f"Linkler: {kacis(', '.join(t['linkler']))[:300]}\n"
+            f"Sayfa: {kacis(t['ozet'])}")
     mesaj("\n".join(satirlar))
 
 
