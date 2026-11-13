@@ -1,0 +1,72 @@
+name: Dolap Fırsat Takip
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"   # her 10 dakikada bir (GitHub'ın izin verdiği en kısa süre 5 dk)
+  workflow_dispatch:          # elle çalıştırma butonu
+    inputs:
+      test:
+        description: "Test modu (ilk 3 ilanı hesaplayıp Telegram'a gönderir)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write             # ilan kayıtlarını ve ayarları depoya kaydetmek için
+
+concurrency:
+  group: dolap-firsat
+  cancel-in-progress: false   # bir tarama bitmeden yenisi başlamaz
+
+jobs:
+  kontrol:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Tarayıcı önbelleği
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('requirements.txt') }}
+
+      - name: Bağımlılıklar
+        run: |
+          pip install -r requirements.txt
+          python -m playwright install --with-deps chromium
+
+      - name: Tara
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          ESIK_YUZDE: ${{ vars.ESIK_YUZDE }}
+          PIYASA_ESIK_YUZDE: ${{ vars.PIYASA_ESIK_YUZDE }}
+          OZET_SAATI: ${{ vars.OZET_SAATI }}
+          DOLAP_URL_EKI: ${{ vars.DOLAP_URL_EKI }}
+          GARDROPS_ARAMA_URL: ${{ vars.GARDROPS_ARAMA_URL }}
+          TEST_MODU: ${{ inputs.test && '1' || '0' }}
+        run: python dolap_firsat.py
+
+      - name: Kayıtları kaydet
+        if: always()
+        run: |
+          git config user.name "dolap-bot"
+          git config user.email "dolap-bot@users.noreply.github.com"
+          git add ilanlar.json || true
+          git diff --cached --quiet || (git commit -m "İlan kayıtları güncellendi" && git pull --rebase && git push)
+
+      - name: Çökme uyarısı
+        if: failure()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=⚠️ Dolap botu bu taramada hata verdi. Kayıt: ${RUN_URL}" > /dev/null
