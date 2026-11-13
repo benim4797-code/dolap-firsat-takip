@@ -38,16 +38,16 @@
   ]
  },
  "tg_offset": 0,
- "tur": 1,
+ "tur": 2,
  "gunluk": {
   "tarih": "2026-11-14",
-  "tarama": 1,
+  "tarama": 2,
   "yeni": 0,
   "bildirim": 0
  },
  "son_ozet": "",
  "hata": {
-  "sayac": 1,
-  "son_uyari": 0
+  "sayac": 2,
+  "son_uyari": 1794608326
  }
 }
